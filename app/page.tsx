@@ -2,22 +2,22 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-white text-black">
-      {/* Hero Section */}
-      <section className="px-10 py-20 text-center border-b border-black">
+    <main className="bg-white text-black">
+      {/* HERO */}
+      <section className="px-6 md:px-10 py-28 text-center">
         <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
           Syncrometric
         </h1>
 
-        <p className="mt-6 text-lg max-w-2xl mx-auto leading-relaxed">
+        <p className="mt-6 text-lg max-w-2xl mx-auto text-gray-700">
           We help businesses grow through result-driven digital marketing,
           high-performance websites, and scalable mobile applications.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
           <Link
-            href="/services"
-            className="px-8 py-3 border border-black bg-black text-white hover:bg-white hover:text-black transition"
+            href="/book"
+            className="px-8 py-3 bg-black text-white border border-black hover:bg-white hover:text-black transition"
           >
             Book an Appointment
           </Link>
@@ -31,103 +31,103 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Why Syncrometric */}
-      <section className="px-10 py-16 max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12">
+      {/* WHY SYNCROMETRIC */}
+      <section className="border-t border-black/10 px-6 md:px-10 py-20">
+        <h2 className="text-3xl font-bold text-center mb-14">
           Why Syncrometric
         </h2>
 
-        <div className="grid md:grid-cols-3 gap-10">
-          <div className="border border-black p-6">
-            <h3 className="text-xl font-semibold">
-              Strategy First Approach
-            </h3>
-            <p className="mt-3 text-sm leading-relaxed">
-              We don’t just build websites or run ads. We understand your
-              business goals and design solutions that align with measurable
-              growth.
-            </p>
-          </div>
-
-          <div className="border border-black p-6">
-            <h3 className="text-xl font-semibold">
-              Modern Technology Stack
-            </h3>
-            <p className="mt-3 text-sm leading-relaxed">
-              Our solutions are built using modern frameworks and scalable
-              architectures, ensuring speed, security, and long-term
-              maintainability.
-            </p>
-          </div>
-
-          <div className="border border-black p-6">
-            <h3 className="text-xl font-semibold">
-              Transparent Communication
-            </h3>
-            <p className="mt-3 text-sm leading-relaxed">
-              No hidden costs, no jargon. You get clear timelines, honest
-              updates, and complete visibility into the work being delivered.
-            </p>
-          </div>
+        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10">
+          {[
+            {
+              title: "Strategy First Approach",
+              desc:
+                "We don’t just build websites or run ads. We deeply understand your business goals and design solutions focused on measurable growth."
+            },
+            {
+              title: "Modern Technology Stack",
+              desc:
+                "Built using modern frameworks and scalable architectures to ensure speed, security, and long-term maintainability."
+            },
+            {
+              title: "Transparent Communication",
+              desc:
+                "Clear timelines, honest updates, and full visibility. No jargon, no hidden costs."
+            }
+          ].map((item) => (
+            <div
+              key={item.title}
+              className="border border-black/20 p-8 hover:border-black transition"
+            >
+              <h3 className="text-xl font-semibold">{item.title}</h3>
+              <p className="mt-4 text-sm text-gray-700 leading-relaxed">
+                {item.desc}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Services Preview */}
-      <section className="px-10 py-16 bg-white border-t border-black">
-        <h2 className="text-3xl font-bold text-center mb-12">
+      {/* SERVICES */}
+      <section className="border-t border-black/10 px-6 md:px-10 py-20 bg-gray-50">
+        <h2 className="text-3xl font-bold text-center mb-14">
           What We Do
         </h2>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <div className="border border-black p-6 hover:bg-black hover:text-white transition">
-            <h3 className="text-xl font-semibold">Digital Marketing</h3>
-            <p className="mt-3 text-sm">
-              SEO, paid ads, content marketing, and growth campaigns designed
-              to increase visibility and conversions.
-            </p>
-          </div>
-
-          <div className="border border-black p-6 hover:bg-black hover:text-white transition">
-            <h3 className="text-xl font-semibold">Website Development</h3>
-            <p className="mt-3 text-sm">
-              High-performance, SEO-friendly websites built for speed,
-              accessibility, and conversion.
-            </p>
-          </div>
-
-          <div className="border border-black p-6 hover:bg-black hover:text-white transition">
-            <h3 className="text-xl font-semibold">Mobile App Development</h3>
-            <p className="mt-3 text-sm">
-              Scalable mobile applications tailored for startups and growing
-              businesses.
-            </p>
-          </div>
+        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
+          {[
+            {
+              title: "Digital Marketing",
+              desc:
+                "SEO, paid ads, content marketing, and performance-driven campaigns to increase visibility and conversions."
+            },
+            {
+              title: "Website Development",
+              desc:
+                "Fast, SEO-friendly, conversion-focused websites built with modern web technologies."
+            },
+            {
+              title: "Mobile App Development",
+              desc:
+                "Scalable mobile applications tailored for startups and growing businesses."
+            }
+          ].map((service) => (
+            <div
+              key={service.title}
+              className="border border-black/20 p-8 bg-white hover:bg-black hover:text-white transition"
+            >
+              <h3 className="text-xl font-semibold">{service.title}</h3>
+              <p className="mt-4 text-sm leading-relaxed">
+                {service.desc}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* Secondary CTA */}
-      <section className="px-10 py-20 text-center border-t border-black">
+      {/* FINAL CTA */}
+      <section className="border-t border-black/10 px-6 md:px-10 py-24 text-center">
         <h2 className="text-3xl font-bold">
-          Already working with us?
+          Ready to grow your business?
         </h2>
 
-        <p className="mt-4 text-sm">
-          View your appointments or manage your upcoming bookings.
+        <p className="mt-4 text-gray-700">
+          Let’s discuss your goals and build something impactful together.
         </p>
 
-        <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+        <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
           <Link
-            href="/bookings"
-            className="px-8 py-3 border border-black hover:bg-black hover:text-white transition"
+            href="/book"
+            className="px-8 py-3 bg-black text-white border border-black hover:bg-white hover:text-black transition"
           >
-            My Bookings
+            Book a Consultation
           </Link>
 
           <Link
-            href="/book"
-            className="px-8 py-3 border border-black bg-black text-white hover:bg-white hover:text-black transition"
+            href="/contact"
+            className="px-8 py-3 border border-black hover:bg-black hover:text-white transition"
           >
-            Book Another Appointment
+            Contact Us
           </Link>
         </div>
       </section>
