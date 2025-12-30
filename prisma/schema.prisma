@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  price       Int
+  duration    Int
+  createdAt   DateTime @default(now())
+  bookings    Booking[]
+}
+
+model Availability {
+  id        String   @id @default(uuid())
+  date      DateTime   // store date (YYYY-MM-DD)
+  slot      Int        // 0–23 (hour index)
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+
+  @@unique([date, slot])
+}
+
+model Booking {
+  id          String   @id @default(uuid())
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+  date        DateTime   // store date (YYYY-MM-DD)
+  slot        Int        // 0–23 (hour index)
+  phone       String
+  status      String     @default("PENDING") // PENDING, CONFIRMED, CANCELLED, COMPLETED
+  createdAt   DateTime   @default(now())
+}
