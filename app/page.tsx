@@ -1,9 +1,10 @@
+import Header from "@/components/Header";
 import Link from "next/link";
 
 export default function HomePage() {
   return (
     <>
-
+  <Header />
   <section className="min-h-screen flex items-center bg-gradient-to-br from-white to-slate-50">
     <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
       <div>

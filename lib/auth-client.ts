@@ -1,25 +1,24 @@
 "use client";
 
-import {
-  signInWithPhoneNumber,
-  RecaptchaVerifier,
-} from "firebase/auth";
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
+let recaptchaVerifier: RecaptchaVerifier | null = null;
+
 export const sendOTP = async (phone: string) => {
-  if (!window.recaptchaVerifier) {
-    window.recaptchaVerifier = new RecaptchaVerifier(
+  if (typeof window === "undefined") return;
+
+  const fullPhone = phone.startsWith("+") ? phone : `+91${phone}`;
+
+  if (!recaptchaVerifier) {
+    recaptchaVerifier = new RecaptchaVerifier(
       auth,
       "recaptcha-container",
-      { size: "invisible" }
+      {
+        size: "normal", // keep visible for now
+      }
     );
   }
 
-  const confirmation = await signInWithPhoneNumber(
-    auth,
-    phone,
-    window.recaptchaVerifier
-  );
-
-  return confirmation;
+  return signInWithPhoneNumber(auth, fullPhone, recaptchaVerifier);
 };
