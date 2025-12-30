@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
 model Service {
   id          String   @id @default(uuid())
   name        String
@@ -14,26 +21,39 @@ model Service {
   price       Int
   duration    Int
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   bookings    Booking[]
+  availability Availability[]
 }
 
 model Availability {
   id        String   @id @default(uuid())
-  date      DateTime   // store date (YYYY-MM-DD)
-  slot      Int        // 0–23 (hour index)
-  isActive  Boolean    @default(true)
-  createdAt DateTime   @default(now())
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id])
 
-  @@unique([date, slot])
+  date      DateTime
+  slot      Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([serviceId, date, slot])
 }
 
 model Booking {
-  id          String   @id @default(uuid())
-  serviceId   String
-  service     Service  @relation(fields: [serviceId], references: [id])
-  date        DateTime   // store date (YYYY-MM-DD)
-  slot        Int        // 0–23 (hour index)
-  phone       String
-  status      String     @default("PENDING") // PENDING, CONFIRMED, CANCELLED, COMPLETED
-  createdAt   DateTime   @default(now())
+  id        String   @id @default(uuid())
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id])
+
+  date      DateTime
+  slot      Int
+  phone     String
+  status    BookingStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serviceId])
+  @@index([date])
+  @@index([phone])
 }

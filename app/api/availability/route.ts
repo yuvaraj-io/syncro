@@ -1,78 +1,89 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-// GET - Get availability for a specific date
+// GET - Get availability for a service on a specific date
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const dateStr = searchParams.get("date");
+  const serviceId = searchParams.get("serviceId");
 
-  if (!dateStr) {
-    return NextResponse.json({ error: "Date parameter is required" }, { status: 400 });
+  if (!dateStr || !serviceId) {
+    return NextResponse.json(
+      { error: "date and serviceId are required" },
+      { status: 400 }
+    );
   }
 
-  // Parse the date string (YYYY-MM-DD format)
   const date = new Date(dateStr);
   date.setHours(0, 0, 0, 0);
 
   const endOfDay = new Date(date);
   endOfDay.setHours(23, 59, 59, 999);
 
-  // Get all available slots for this date
   const availability = await prisma.availability.findMany({
     where: {
+      serviceId,
       date: {
         gte: date,
         lte: endOfDay,
       },
-      isActive: true
+      isActive: true,
     },
     select: {
-      slot: true
+      slot: true,
     },
     orderBy: {
-      slot: "asc"
-    }
+      slot: "asc",
+    },
   });
 
-  return NextResponse.json({ 
-    availableSlots: availability.map(a => a.slot)
+  return NextResponse.json({
+    availableSlots: availability.map(a => a.slot),
   });
 }
 
-// POST - Add availability slots
+// POST - Set availability for a service on a date
 export async function POST(req: Request) {
-  const { date, slots } = await req.json();
+  try {
+    const { serviceId, date, slots } = await req.json();
 
-  if (!date || !slots || !Array.isArray(slots)) {
+    if (!serviceId || !date || !Array.isArray(slots)) {
+      return NextResponse.json(
+        { error: "serviceId, date and slots are required" },
+        { status: 400 }
+      );
+    }
+
+    const availabilityDate = new Date(date);
+    availabilityDate.setHours(0, 0, 0, 0);
+
+    // Remove existing availability for this service + date
+    await prisma.availability.deleteMany({
+      where: {
+        serviceId,
+        date: availabilityDate,
+      },
+    });
+
+    // Create new availability slots
+    await prisma.availability.createMany({
+      data: slots.map((slot: number) => ({
+        serviceId,
+        date: availabilityDate,
+        slot,
+        isActive: true,
+      })),
+    });
+
+    return NextResponse.json({
+      message: "Availability updated successfully",
+      slots,
+    });
+  } catch (error) {
+    console.error(error);
     return NextResponse.json(
-      { error: "Date and slots array are required" },
-      { status: 400 }
+      { error: "Failed to update availability" },
+      { status: 500 }
     );
   }
-
-  const availabilityDate = new Date(date);
-  availabilityDate.setHours(0, 0, 0, 0);
-
-  // Delete existing availability for this date
-  await prisma.availability.deleteMany({
-    where: {
-      date: availabilityDate
-    }
-  });
-
-  // Create new availability slots
-  const availabilityRecords = slots.map(slot => ({
-    date: availabilityDate,
-    slot: Number(slot),
-    isActive: true
-  }));
-
-  await prisma.availability.createMany({
-    data: availabilityRecords
-  });
-
-  return NextResponse.json({ 
-    message: "Availability updated successfully",
-    slots: slots
-  });
 }
