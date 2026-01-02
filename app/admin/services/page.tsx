@@ -38,6 +38,9 @@ export default function AdminServicesPage() {
   return (
     <div className="p-10 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-8">
+         <Link href="/admin" className=" border p-3 hover:underline">
+          Dashboard
+        </Link>
         <h1 className="text-3xl font-bold">Services</h1>
 
         <Link
