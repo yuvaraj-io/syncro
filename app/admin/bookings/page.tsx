@@ -12,13 +12,17 @@ type Booking = {
   serviceName: string | null;
 };
 
+export const dynamic = "force-dynamic";
+
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchBookings() {
-      const res = await fetch("/api/admin/bookings/upcoming");
+      const res = await fetch("/api/admin/bookings/upcoming", {
+        cache: "no-store",
+      });
       const data = await res.json();
       setBookings(Array.isArray(data) ? data : []);
       setLoading(false);
