@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 type CalendarSummary = {
   date: string; // YYYY-MM-DD
@@ -181,8 +182,16 @@ export default function AdminCalendarPage() {
   // Render
   // ------------------------
   return (
-    <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-10">
+    <>
+     <div className="flex p-10 gap-10 items-center mb-8">
+         <Link href="/admin" className=" border p-3 hover:underline">
+          Dashboard
+        </Link>
+        <div className="text-3xl font-bold">Admin Calandar</div>
+      </div>
+      <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-10">
       {/* LEFT: Monthly Calendar */}
+      
       <div>
         <div className="flex justify-between items-center mb-4">
           <button
@@ -304,5 +313,7 @@ export default function AdminCalendarPage() {
         )}
       </div>
     </div>
+    </>
+    
   );
 }

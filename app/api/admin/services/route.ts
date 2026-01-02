@@ -6,7 +6,6 @@ import crypto from "crypto";
  * GET /api/services
  */
 export async function GET() {
-    debugger
   try {
     const services = await prisma.service.findMany({
       orderBy: { createdAt: "desc" },
