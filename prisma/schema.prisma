@@ -16,7 +16,7 @@ model Service {
   duration    Int
 }
 
-model booking {
+model Booking {
   id         String    @id
   date       DateTime  @db.Date
   hour       Int

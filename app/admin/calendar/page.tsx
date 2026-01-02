@@ -1,278 +1,308 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
-type AvailabilitySlot = {
-  slot: number;
+type CalendarSummary = {
+  date: string; // YYYY-MM-DD
+  available_count: number;
+  total_count: number;
 };
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+type Slot = {
+  hour: number;
+  id?: string;
+  status?: "AVAILABLE" | "BOOKED";
+  checked: boolean;
+};
 
-export default function CalendarPage() {
+export default function AdminCalendarPage() {
   const today = new Date();
+  const todayStr = today.toISOString().split("T")[0];
+
+  const [calendarData, setCalendarData] = useState<CalendarSummary[]>([]);
+  const [selectedDate, setSelectedDate] = useState(todayStr);
   const [currentMonth, setCurrentMonth] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1)
   );
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [monthAvailability, setMonthAvailability] = useState<Record<string, boolean>>({});
-  const [availableSlots, setAvailableSlots] = useState<AvailabilitySlot[]>([]);
-  const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
+  // batch tracking
+  const addedSlots = useMemo(() => new Set<number>(), []);
+  const removedSlotIds = useMemo(() => new Set<string>(), []);
 
-  /* ---------------- FETCH MONTH DATA ---------------- */
+  // ------------------------
+  // Fetch calendar summary
+  // ------------------------
   useEffect(() => {
-    const y = currentMonth.getFullYear();
-    const m = currentMonth.getMonth() + 1;
+  fetch("/api/admin/bookings/calendar-summary")
+    .then(res => res.json())
+    .then(data => {
+      debugger
+      if (Array.isArray(data)) {
+        setCalendarData(data);
+      } else {
+        console.error("Calendar summary API returned:", data);
+        setCalendarData([]);
+      }
+    });
+}, []);
 
-    fetch(`/api/availability/month?year=${y}&month=${m}`)
-      .then((res) => res.json())
-      .then(setMonthAvailability);
-  }, [currentMonth]);
-
-  /* ---------------- FETCH DAY DATA ---------------- */
+  // ------------------------
+  // Fetch slots for date
+  // ------------------------
   useEffect(() => {
-    if (!selectedDate) return;
+    async function fetchSlots() {
+      setLoading(true);
 
-    const date = selectedDate.toISOString().split("T")[0];
+      const res = await fetch(
+        `/api/admin/bookings?date=${selectedDate}`
+      );
+      const data = await res.json();
 
-    fetch(`/api/availability?date=${date}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setAvailableSlots(data.availableSlots || []);
-        setSelectedSlots([]);
+      const map = new Map<number, Slot>();
+      for (let h = 0; h < 24; h++) {
+        map.set(h, { hour: h, checked: false });
+      }
+
+      data?.forEach((b: any) => {
+        map.set(b.hour, {
+          hour: b.hour,
+          id: b.id,
+          status: b.status,
+          checked: b.status === "AVAILABLE",
+        });
       });
+
+      setSlots(Array.from(map.values()));
+      setLoading(false);
+    }
+
+    fetchSlots();
   }, [selectedDate]);
 
-  /* ---------------- HELPERS ---------------- */
-  function isPastDay(date: Date) {
-    return date < new Date(today.toDateString());
-  }
+  // ------------------------
+  // Toggle slot
+  // ------------------------
+  function toggleSlot(slot: Slot) {
+    if (slot.status === "BOOKED") return;
 
-  function slotStatus(slot: number) {
-    if (!selectedDate) return "AVAILABLE";
+    setSlots(prev =>
+      prev.map(s => {
+        if (s.hour !== slot.hour) return s;
 
-    const slotTime = new Date(selectedDate);
-    slotTime.setHours(slot, 0, 0, 0);
-
-    if (
-      isPastDay(selectedDate) ||
-      (selectedDate.toDateString() === today.toDateString() && slotTime < today)
-    ) {
-      return "PAST";
-    }
-
-    if (availableSlots.some((s) => s.slot === slot)) {
-      return "AVAILABLE";
-    }
-
-    return "AVAILABLE";
-  }
-
-  function toggleSlot(slot: number) {
-    setSelectedSlots((prev) =>
-      prev.includes(slot)
-        ? prev.filter((s) => s !== slot)
-        : [...prev, slot]
+        if (s.checked) {
+          if (s.id) removedSlotIds.add(s.id);
+          return { ...s, checked: false };
+        } else {
+          addedSlots.add(s.hour);
+          return { ...s, checked: true };
+        }
+      })
     );
   }
 
-  async function saveAvailability() {
-    if (!selectedDate || selectedSlots.length === 0) return;
+  // ------------------------
+  // Save batch
+  // ------------------------
+  async function handleSave() {
+    setLoading(true);
 
-    await fetch("/api/availability", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date: selectedDate.toISOString().split("T")[0],
-        slots: selectedSlots,
-      }),
-    });
+    await Promise.all([
+      ...Array.from(addedSlots).map(hour =>
+        fetch("/api/admin/bookings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date: selectedDate, hour }),
+        })
+      ),
+      ...Array.from(removedSlotIds).map(id =>
+        fetch(`/api/admin/bookings/${id}`, { method: "DELETE" })
+      ),
+    ]);
 
-    alert("Availability saved");
-    
-    // Refresh month data
-    const y = currentMonth.getFullYear();
-    const m = currentMonth.getMonth() + 1;
-    fetch(`/api/availability/month?year=${y}&month=${m}`)
-      .then((res) => res.json())
-      .then(setMonthAvailability);
-      
-    // Refresh day data
-    const date = selectedDate.toISOString().split("T")[0];
-    fetch(`/api/availability?date=${date}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setAvailableSlots(data.availableSlots || []);
-        setSelectedSlots([]);
-      });
-      
-    setSelectedDate(null);
+    addedSlots.clear();
+    removedSlotIds.clear();
+
+    alert("Slots saved");
+    setSelectedDate(selectedDate);
   }
 
-  /* ---------------- CALENDAR GRID ---------------- */
+  // ------------------------
+  // Calendar helpers
+  // ------------------------
+  function getIndicator(dateStr: string) {
+    const entry = calendarData.find(d => {
+      return d.date === dateStr
+    });
+    if (!entry) return "";
+
+    if (entry.available_count > 0) return "bg-green-500";
+    if (entry.total_count > 0) return "bg-purple-500";
+    return "";
+  }
+
+  function isPast(dateStr: string) {
+    return dateStr < todayStr;
+  }
+
+  // ------------------------
+  // Build month grid
+  // ------------------------
   const daysInMonth = new Date(
     currentMonth.getFullYear(),
     currentMonth.getMonth() + 1,
     0
   ).getDate();
 
-  const days = Array.from({ length: daysInMonth }, (_, i) => {
+  const startDay = new Date(
+    currentMonth.getFullYear(),
+    currentMonth.getMonth(),
+    1
+  ).getDay(); // 0 = Sun
+
+  const calendarCells = [];
+
+  for (let i = 0; i < startDay; i++) {
+    calendarCells.push(null);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(
       currentMonth.getFullYear(),
       currentMonth.getMonth(),
-      i + 1
+      day
     );
-    const key = date.toISOString().split("T")[0];
+    const dateStr = date.toISOString().split("T")[0];
+    calendarCells.push(dateStr);
+  }
 
-    return {
-      date,
-      hasAvailability: monthAvailability[key],
-    };
-  });
-
+  // ------------------------
+  // Render
+  // ------------------------
   return (
-    <div className="p-10 max-w-4xl mx-auto">
-        <Link
-          href="/admin  "
-          className="border border-black p-2 hover:bg-black hover:text-white transition mb-6"
-        >
-            <span className="font-bold">Admin Dashboard</span>
-        </Link>
-       
-        <h2 className="text-3xl font-bold mb-8 pt-5">Admin Calendar</h2>
-      {/* ---------------- HEADER ---------------- */}
-      <div className="flex justify-between items-center mb-6">
-        <button
-          onClick={() =>
-            setCurrentMonth(
-              new Date(
-                currentMonth.getFullYear(),
-                currentMonth.getMonth() - 1,
-                1
+    <div className="p-10 grid grid-cols-1 md:grid-cols-2 gap-10">
+      {/* LEFT: Monthly Calendar */}
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <button
+            onClick={() =>
+              setCurrentMonth(
+                new Date(
+                  currentMonth.getFullYear(),
+                  currentMonth.getMonth() - 1,
+                  1
+                )
               )
-            )
-          }
-        >
-          ←
-        </button>
+            }
+            className="border px-3 py-1"
+          >
+            ←
+          </button>
 
-        <h1 className="text-xl font-bold">
-          {currentMonth.toLocaleString("default", {
-            month: "long",
-            year: "numeric",
-          })}
-        </h1>
+          <h2 className="font-bold">
+            {currentMonth.toLocaleString("default", {
+              month: "long",
+              year: "numeric",
+            })}
+          </h2>
 
-        <button
-          onClick={() =>
-            setCurrentMonth(
-              new Date(
-                currentMonth.getFullYear(),
-                currentMonth.getMonth() + 1,
-                1
+          <button
+            onClick={() =>
+              setCurrentMonth(
+                new Date(
+                  currentMonth.getFullYear(),
+                  currentMonth.getMonth() + 1,
+                  1
+                )
               )
-            )
-          }
-        >
-          →
-        </button>
-      </div>
+            }
+            className="border px-3 py-1"
+          >
+            →
+          </button>
+        </div>
 
-      {/* ---------------- DAYS GRID ---------------- */}
-      <div className="grid grid-cols-7 gap-3">
-        {days.map(({ date, hasAvailability }) => {
-          const isPast = isPastDay(date);
-
-          return (
-            <div
-              key={date.toISOString()}
-              onClick={() => setSelectedDate(date)}
-              className={`border p-3 cursor-pointer text-center relative
-                ${isPast ? "text-gray-400" : ""}
-              `}
-            >
-              {date.getDate()}
-
-              {/* DOT */}
-              {isPast && (
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-400 rounded-full" />
-              )}
-
-              {hasAvailability && !isPast && (
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-green-500 rounded-full" />
-              )}
+        <div className="grid grid-cols-7 gap-2 text-center">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+            <div key={d} className="font-semibold text-sm">
+              {d}
             </div>
-          );
-        })}
+          ))}
+
+          {calendarCells.map((dateStr, idx) => {
+            if (!dateStr)
+              return <div key={idx} />;
+
+            const disabled = isPast(dateStr);
+
+            return (
+              <button
+                key={dateStr}
+                disabled={disabled}
+                onClick={() => setSelectedDate(dateStr)}
+                className={`
+                  border p-2 text-sm relative
+                  ${disabled ? "opacity-30 cursor-not-allowed" : ""}
+                  ${selectedDate === dateStr ? "ring-2 ring-black" : ""}
+                `}
+              >
+                {dateStr.split("-")[2]}
+
+                <span
+                  className={`absolute bottom-1 right-1 w-2 h-2 rounded-full ${getIndicator(
+                    dateStr
+                  )}`}
+                />
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* ---------------- MODAL ---------------- */}
-      {selectedDate && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
-          <div className="bg-white p-6 w-full max-w-md h-[400px] overflow-y-scroll">
-            <h2 className="text-lg font-bold mb-s">
-              {selectedDate.toDateString()}
-            </h2>
+      {/* RIGHT: Slot Grid */}
+      <div>
+        <h2 className="text-xl font-bold mb-4">
+          Slots for {selectedDate}
+        </h2>
 
-            {isPastDay(selectedDate) ? (
-              <div className="mt-4">
-                <p className="font-semibold mb-2">Availability</p>
-                {availableSlots.map((s) => (
-                  <p key={s.slot}>
-                    {s.slot}:00 – {s.slot + 1}:00
-                  </p>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-4 space-y-2">
-                {HOURS.map((slot) => {
-                  const status = slotStatus(slot);
-
-                  return (
-                    <label
-                      key={slot}
-                      className={`flex items-center gap-2 p-2 border
-                        ${
-                          status === "PAST"
-                            ? "text-gray-400"
-                            : status === "AVAILABLE"
-                            ? ""
-                            : ""
-                        }
-                      `}
-                    >
-                      {status === "AVAILABLE" && (
-                        <input
-                          type="checkbox"
-                          checked={selectedSlots.includes(slot)}
-                          onChange={() => toggleSlot(slot)}
-                        />
-                      )}
-                      {slot}:00 – {slot + 1}:00
-                    </label>
-                  );
-                })}
-
-                <button
-                  onClick={saveAvailability}
-                  disabled={selectedSlots.length === 0}
-                  className="mt-4 bg-black text-white px-4 py-2 disabled:opacity-50"
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              {slots.map(slot => (
+                <label
+                  key={slot.hour}
+                  className={`p-2 border flex items-center gap-2
+                    ${
+                      slot.status === "BOOKED"
+                        ? "bg-blue-300 cursor-not-allowed"
+                        : slot.checked
+                        ? "bg-green-300"
+                        : ""
+                    }`}
                 >
-                  Save Availability
-                </button>
-              </div>
-            )}
+                  <input
+                    type="checkbox"
+                    checked={slot.checked}
+                    disabled={slot.status === "BOOKED"}
+                    onChange={() => toggleSlot(slot)}
+                  />
+                  {slot.hour}:00 – {slot.hour + 1}:00
+                </label>
+              ))}
+            </div>
 
             <button
-              className="mt-4 text-sm underline"
-              onClick={() => setSelectedDate(null)}
+              onClick={handleSave}
+              className="mt-6 px-6 py-2 border bg-black text-white hover:bg-white hover:text-black"
             >
-              Close
+              Save
             </button>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
