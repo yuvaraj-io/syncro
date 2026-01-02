@@ -112,21 +112,32 @@ export default function BookPage() {
   // ------------------------
   // Confirm booking
   // ------------------------
-  async function confirmBooking() {
-    if (!selectedSlot || !serviceId) return;
+ async function confirmBooking() {
+  if (!selectedSlot || !serviceId) return;
 
-    await fetch("/api/bookings/confirm", {
+  try {
+    const res = await fetch("/api/bookings/confirm", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         bookingId: selectedSlot,
         serviceId,
-        message: "Join meeting: https://meet.google.com/abs-vxjx-mwd"
-      })
+        message: "https://meet.google.com/abs-vxjx-mwd",
+      }),
     });
 
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Booking failed");
+    }
+
     router.push("/my-bookings");
+  } catch (error: any) {
+    console.error("Booking error:", error);
+    alert(error.message || "Something went wrong while booking");
   }
+}
 
   // ------------------------
   // Render
