@@ -16,7 +16,7 @@ model Service {
   duration    Int
 }
 
-model Booking {
+model booking {
   id         String    @id
   date       DateTime  @db.Date
   hour       Int
@@ -27,4 +27,12 @@ model Booking {
   created_at DateTime? @default(now()) @db.DateTime(0)
 
   @@index([date, hour], map: "idx_date_hour")
+}
+
+model user {
+  id         String    @id
+  phone      String    @unique(map: "phone") @db.VarChar(20)
+  created_at DateTime? @default(now()) @db.DateTime(0)
+
+  @@index([phone], map: "idx_phone")
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Service = {
   id: string;
@@ -14,6 +15,7 @@ type Service = {
 export default function ServicesList() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchServices() {
@@ -25,6 +27,17 @@ export default function ServicesList() {
 
     fetchServices();
   }, []);
+
+  async function handleBookNow(serviceId: string) {
+    const res = await fetch("/api/auth/me");
+    const { authenticated } = await res.json();
+    debugger
+    if (!authenticated) {
+      router.push(`/login?redirect=/book?serviceId=${serviceId}`);
+    } else {
+      router.push(`/book?serviceId=${serviceId}`);
+    }
+  }
 
   return (
     <>
@@ -75,12 +88,12 @@ export default function ServicesList() {
                     <p className="mt-1"><strong>Price:</strong> ₹{service.price}</p>
                   </div>
 
-                  <Link
-                    href={`/book?serviceId=${service.id}`}
-                    className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-center"
+                  <button
+                    onClick={() => handleBookNow(service.id)}
+                    className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
                     Book Now
-                  </Link>
+                  </button>
                 </div>
               ))}
             </div>
