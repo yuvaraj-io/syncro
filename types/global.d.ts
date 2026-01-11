@@ -4,6 +4,7 @@ declare global {
   interface Window {
     recaptchaVerifier?: RecaptchaVerifier;
     confirmationResult?: ConfirmationResult;
+     dataLayer: Record<string, any>[];
   }
 }
 

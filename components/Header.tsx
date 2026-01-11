@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { AnalyticsPageView } from "./Analytics";
 
 export default function Header() {
   const cookieStore = cookies();
@@ -8,6 +9,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b">
+      <AnalyticsPageView />
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Brand */}
         <Link href="/" className="text-xl font-bold tracking-tight">
@@ -52,3 +54,5 @@ export default function Header() {
     </header>
   );
 }
+
+
